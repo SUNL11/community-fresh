@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE / Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# AI / ML
+*.pth
+*.pt
+*.onnx
+*.h5
+*.pkl
+checkpoints/
+lightning_logs/
+*.log
+
+# Datasets
+data/
+datasets/
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.tiff
+!test_images/
+!sample_images/
+!static/images/
+
+# Config with secrets
+.env
+config.local.yaml
+config.local.yml
+
+# Notebooks (output)
+.ipynb_checkpoints/
+
+# Docker
+.docker/
+
+# Project specific
+outputs/
+results/
+runs/
+wandb/
