@@ -17,10 +17,11 @@ from src.database import init_db, save_inspection, get_recent_history as get_db_
 init_db()
 
 
-def run_detection(image: Optional[np.ndarray]):
+def run_detection(upload_img: Optional[np.ndarray], webcam_img: Optional[np.ndarray]):
+    image = upload_img if upload_img is not None else webcam_img
     if image is None:
-        gr.Error("请先上传图片")
-        return None, [], "请先上传图片", ""
+        gr.Error("请先上传图片或使用摄像头拍照")
+        return None, [], "请先上传图片或拍照", ""
     try:
         annotated, stats_list, stats_summary = detect(image)
     except FileNotFoundError:
@@ -65,7 +66,9 @@ with gr.Blocks(title=GRADIO_TITLE) as demo:
     gr.Markdown("上传生鲜图片，自动识别品类并统计数量。")
     with gr.Row(equal_height=True):
         with gr.Column(scale=1):
-            image_input = gr.Image(label="原图", type="numpy", height=360)
+            upload_image = gr.Image(source="upload", type="numpy", height=200, label="上传图片")
+            gr.Markdown("")  # spacer
+            webcam_image = gr.Image(source="webcam", type="numpy", height=200, label="摄像头拍照")
         with gr.Column(scale=1):
             annotated_output = gr.Image(label="检测结果", type="numpy", height=360)
     detect_btn = gr.Button("开始检测", variant="primary")
@@ -83,7 +86,7 @@ with gr.Blocks(title=GRADIO_TITLE) as demo:
 
     detect_btn.click(
         fn=run_detection,
-        inputs=[image_input],
+        inputs=[upload_image, webcam_image],
         outputs=[annotated_output, stats_table, summary_md, detection_state],
     )
     report_btn.click(
