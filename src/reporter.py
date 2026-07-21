@@ -1,7 +1,12 @@
 # 生鲜 AI 品控 — 智能损耗报表生成（阿里云百炼）
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import json
 import httpx
-import config as cfg
+
+from configs import config as cfg
 
 REPORT_SYSTEM_PROMPT = "你是生鲜门店损耗分析专家「鲜小智」，擅长从数据中提炼 actionable 的运营建议。"
 REPORT_USER_PROMPT_TPL = (

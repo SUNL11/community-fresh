@@ -1,12 +1,16 @@
 # 生鲜 AI 品控 — 视觉检测模块
 # YOLOv11n 目标检测 + HSV 颜色空间瑕疵分析
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import cv2
 import numpy as np
 from PIL import Image
 from ultralytics import YOLO
 
-import config as cfg
+from configs import config as cfg
 
 # ── 全局模型（惰性加载） ──
 _model = None
@@ -15,7 +19,10 @@ _model = None
 def get_model():
     global _model
     if _model is None:
-        _model = YOLO(str(cfg.MODEL_PATH))
+        path = str(cfg.MODEL_PATH)
+        if not cfg.MODEL_PATH.exists():
+            path = cfg.MODEL_NAME  # 自动从 Ultralytics 下载
+        _model = YOLO(path)
     return _model
 
 

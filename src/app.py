@@ -1,14 +1,18 @@
 # 生鲜 AI 品控与损耗智能统计工具 — Gradio 主界面
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import json
 
 import gradio as gr
 import numpy as np
 
-from config import GRADIO_TITLE, GRADIO_PORT, GRADIO_SHARE
-from detector import detect, build_report_data
-from reporter import generate_report
-from database import init_db, save_inspection, get_recent_history as get_db_history
+from configs.config import GRADIO_TITLE, GRADIO_PORT, GRADIO_SHARE
+from src.detector import detect, build_report_data
+from src.reporter import generate_report
+from src.database import init_db, save_inspection, get_recent_history as get_db_history
 
 # ── 启动时初始化数据库 ──
 init_db()

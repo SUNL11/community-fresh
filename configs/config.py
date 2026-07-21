@@ -5,15 +5,17 @@ from pathlib import Path
 
 # ── 项目路径 ──
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "yolo11n.pt"
+MODEL_PATH = BASE_DIR / "models" / "yolo11n.pt"
 DB_PATH = BASE_DIR / "data" / "inspections.db"
 SAMPLE_DIR = BASE_DIR / "static" / "samples"
 
 # ── YOLO 检测参数 ──
+MODEL_NAME = "yolo11n.pt"           # Ultralytics 模型名称（未找到本地文件时自动下载）
 YOLO_CONF_THRESH = 0.45           # 置信度阈值
 YOLO_IOU_THRESH = 0.50            # NMS 去重 IoU 阈值
 YOLO_DEVICE = "cuda:0"            # GPU 设备；设为 "cpu" 可兜底
 YOLO_IMG_SIZE = 640               # 输入尺寸
+MODEL_PATH = BASE_DIR / "models" / MODEL_NAME  # 本地模型路径
 
 # ── COCO 品类映射 ──
 # 只保留我们关注的 4 种生鲜

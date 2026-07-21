@@ -1,10 +1,14 @@
 # 生鲜 AI 品控 — SQLite 数据持久化
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-import config as cfg
+from configs import config as cfg
 
 
 def get_conn():
