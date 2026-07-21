@@ -58,7 +58,12 @@ config.local.yml
 .docker/
 
 # Project specific
+*.db
+.env
+!.env.example
 outputs/
 results/
 runs/
 wandb/
+data/
+static/
