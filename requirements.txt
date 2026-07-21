@@ -1,13 +1,13 @@
 # 生鲜 AI 品控 — Python 依赖
 
 # 核心框架
-gradio==4.44.1
-numpy==1.26.4
+gradio==3.50.2
+numpy>=1.24.0,<2.0
 opencv-python-headless==4.10.0.84
 pillow==10.4.0
 
 # 视觉推理（YOLOv11n）
-ultralytics==8.3.0
+ultralytics==8.2.103
 torch>=2.0.0
 
 # LLM API 客户端

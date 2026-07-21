@@ -19,7 +19,9 @@ init_db()
 
 
 # ── 检测回调 ──
-def run_detection(image: np.ndarray | None):
+from typing import Optional
+
+def run_detection(image: Optional[np.ndarray]):
     if image is None:
         return None, [], "", None
 
@@ -147,7 +149,7 @@ with gr.Blocks(title=GRADIO_TITLE, theme=gr.themes.Soft()) as demo:
 # ── 启动 ──
 if __name__ == "__main__":
     demo.launch(
-        server_name="0.0.0.0",
+        server_name="127.0.0.1",
         server_port=GRADIO_PORT,
         share=GRADIO_SHARE,
     )
