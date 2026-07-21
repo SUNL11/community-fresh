@@ -7,11 +7,13 @@ opencv-python-headless==4.10.0.84
 pillow==10.4.0
 
 # 视觉推理（YOLOv11n）
-ultralytics==8.2.103
+# 视觉推理（YOLOv11n）/ 用户环境实测 ultralytics 8.4.102 正常
+ultralytics>=8.3.0
 torch>=2.0.0
 
 # LLM API 客户端
 httpx==0.27.2
+python-dotenv>=1.0.0
 
 # 数据持久化
 # sqlite3 为 Python 内置，无需额外安装

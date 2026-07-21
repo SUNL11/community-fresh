@@ -1,10 +1,10 @@
 # 生鲜 AI 品控与损耗智能统计工具 — Gradio 主界面
-
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import json
+from typing import Optional
 
 import gradio as gr
 import numpy as np
@@ -14,142 +14,83 @@ from src.detector import detect, build_report_data
 from src.reporter import generate_report
 from src.database import init_db, save_inspection, get_recent_history as get_db_history
 
-# ── 启动时初始化数据库 ──
 init_db()
 
 
-# ── 检测回调 ──
-from typing import Optional
-
 def run_detection(image: Optional[np.ndarray]):
     if image is None:
-        return None, [], "", None
-
-    annotated, stats_list, stats_summary = detect(image)
-
-    if stats_list:
-        table_data = [
-            [s["category_cn"], s["count"], s["defect_count"], s["loss_rate"]]
-            for s in stats_list
-        ]
-    else:
-        table_data = []
-
-    summary = (
-        f"**总数量**: {stats_summary['total_count']}   "
-        f"**总瑕疵数**: {stats_summary['total_defect']}   "
-        f"**整体损耗率**: {stats_summary['overall_loss_rate']}"
-    )
-
+        gr.Error("请先上传图片")
+        return None, [], "请先上传图片", ""
+    try:
+        annotated, stats_list, stats_summary = detect(image)
+    except FileNotFoundError:
+        gr.Error("模型文件未找到，请确认 models/yolo11n.pt 存在")
+        return image, [], "模型文件缺失", ""
+    except Exception as e:
+        gr.Error("检测失败: {}".format(e))
+        return image, [], "检测失败", ""
+    if not stats_list:
+        gr.Warning("未识别到目标，请换一张图片重试")
+        return image, [], "未识别到目标", ""
+    table_data = [[s["category_cn"], s["count"]] for s in stats_list]
+    summary = "**总数量**: {}".format(stats_summary["total_count"])
     detection_data = build_report_data(stats_list, stats_summary)
     detection_json = json.dumps(detection_data, ensure_ascii=False)
-
     return annotated, table_data, summary, detection_json
 
 
-# ── 报表生成回调 ──
 def run_report(detection_json: str):
     if not detection_json:
-        return "请先上传图片并点击「开始检测」"
-
-    detection_data = json.loads(detection_json)
+        return "请先检测图片"
+    try:
+        detection_data = json.loads(detection_json)
+    except json.JSONDecodeError:
+        return "检测数据异常，请重新检测"
     items = detection_data.get("检测数据", {}).get("品类详情", [])
-
-    # 构造用于保存的 stats_list / stats_summary
     stats_list = []
-    total_count = 0
-    total_defect = 0
+    total_count = sum(item.get("数量", 0) for item in items)
     for item in items:
-        cat_en = item.get("品类", "")
-        c = item.get("数量", 0)
-        d = item.get("瑕疵数", 0)
-        stats_list.append({
-            "category_en": cat_en,
-            "count": c,
-            "defect_count": d,
-            "loss_rate": item.get("损耗率", "0%"),
-        })
-        total_count += c
-        total_defect += d
-
-    stats_summary = {
-        "total_count": total_count,
-        "total_defect": total_defect,
-        "overall_loss_rate": f"{round(total_defect / max(total_count,1) * 100, 1)}%",
-    }
-
+        stats_list.append({"category_en": item.get("品类", ""), "count": item.get("数量", 0)})
+    stats_summary = {"total_count": total_count, "total_defect": 0, "overall_loss_rate": "0%"}
     history = get_db_history(7)
     report = generate_report(detection_data, history)
-
-    # 持久化
     if stats_list:
         save_inspection(stats_list, stats_summary, report)
-
+    gr.Warning("报表已自动保存至本地数据库")
     return report
 
 
-# ── 构建 Gradio 界面 ──
-with gr.Blocks(title=GRADIO_TITLE, theme=gr.themes.Soft()) as demo:
-
-    gr.Markdown(f"# 🥬 {GRADIO_TITLE}")
-    gr.Markdown("上传生鲜图片或使用摄像头拍照，自动识别品类、统计数量、检测瑕疵，一键生成损耗报表。")
-
-    with gr.Row():
-        with gr.Column(scale=1, min_width=360):
-            image_input = gr.Image(
-                label="📤 上传图片 / 拍照",
-                sources=["upload", "webcam"],
-                type="numpy",
-                height=360,
-            )
-            detect_btn = gr.Button("🚀 开始检测", variant="primary", size="lg")
-
-        with gr.Column(scale=2):
-            annotated_output = gr.Image(
-                label="📊 检测结果",
-                type="numpy",
-                height=360,
-            )
-
+with gr.Blocks(title=GRADIO_TITLE) as demo:
+    gr.Markdown("# 生鲜 AI 品控与损耗智能统计工具")
+    gr.Markdown("上传生鲜图片，自动识别品类并统计数量。")
+    with gr.Row(equal_height=True):
+        with gr.Column(scale=1):
+            image_input = gr.Image(label="原图", type="numpy", height=360)
+        with gr.Column(scale=1):
+            annotated_output = gr.Image(label="检测结果", type="numpy", height=360)
+    detect_btn = gr.Button("开始检测", variant="primary")
     stats_table = gr.Dataframe(
-        label="📋 数据统计",
-        headers=["品类", "数量", "瑕疵数", "损耗率"],
-        col_count=(4, "fixed"),
+        label="数据统计",
+        headers=["品类", "数量"],
+        col_count=(2, "fixed"),
         row_count=5,
         interactive=False,
     )
     summary_md = gr.Markdown("")
-
-    with gr.Row():
-        report_btn = gr.Button("📄 生成损耗报表", variant="secondary", size="lg")
-        report_output = gr.Textbox(
-            label="损耗分析报表",
-            lines=10,
-            max_lines=18,
-            show_copy_button=True,
-        )
-
-    # ── 状态保持 ──
+    report_btn = gr.Button("生成损耗报表", variant="secondary")
+    report_output = gr.Textbox(label="损耗分析报表", lines=10, max_lines=18)
     detection_state = gr.State("")
 
-    # ── 事件绑定 ──
     detect_btn.click(
         fn=run_detection,
         inputs=[image_input],
         outputs=[annotated_output, stats_table, summary_md, detection_state],
     )
-
     report_btn.click(
         fn=run_report,
         inputs=[detection_state],
         outputs=[report_output],
     )
 
-
-# ── 启动 ──
 if __name__ == "__main__":
-    demo.launch(
-        server_name="127.0.0.1",
-        server_port=GRADIO_PORT,
-        share=GRADIO_SHARE,
-    )
+    demo.launch(server_name="127.0.0.1", server_port=GRADIO_PORT, share=GRADIO_SHARE)

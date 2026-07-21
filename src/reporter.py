@@ -14,9 +14,9 @@ REPORT_USER_PROMPT_TPL = (
     "检测数据：{json_data}\n\n"
     "报表结构：\n"
     "=== 今日损耗概览 ===\n"
-    "一句话概括整体情况，包含总数量、瑕疵总数、整体损耗率。如果有历史数据可以进行对比分析。\n\n"
+    "一句话概括今日检测情况，包含总数量和品类分布。如果有历史数据可以进行对比分析。\n\n"
     "=== 重点损耗品类分析 ===\n"
-    "指出损耗率最高的品类，结合品类特性（如番茄皮薄易损、香蕉怕压等）推测可能原因。\n\n"
+    "指出数量最多的品类，结合品类特性分析可能原因。\n\n"
     "=== 管控优化建议 ===\n"
     "输出 2-3 条贴合社区生鲜小店场景的实操建议，语言接地气、可直接执行。\n\n"
     "要求：语言简洁专业，适合门店经营者阅读，总字数 300 字以内。"
@@ -52,12 +52,25 @@ def generate_report(detection_data: dict, history_summary: str = "") -> str:
     }
 
     try:
-        with httpx.Client(timeout=cfg.LLM_TIMEOUT) as client:
-            resp = client.post(
-                f"{cfg.DASHSCOPE_BASE_URL}/chat/completions",
-                headers=headers,
-                json=payload,
-            )
+        for attempt in range(3):
+            try:
+                with httpx.Client(timeout=cfg.LLM_TIMEOUT) as client:
+                    resp = client.post(
+                        f"{cfg.DASHSCOPE_BASE_URL}/chat/completions",
+                        headers=headers,
+                        json=payload,
+                    )
+                if resp.status_code == 200:
+                    break
+                if resp.status_code in (429, 502, 503) and attempt < 2:
+                    import time
+                    time.sleep(2 ** attempt)
+                    continue
+                return f"[错误] 百炼 API 返回 {resp.status_code}: {resp.text[:200]}"
+            except httpx.TimeoutException:
+                if attempt < 2:
+                    continue
+                return "[错误] 请求百炼 API 超时，已重试 3 次仍失败，请检查网络或稍后重试"
         if resp.status_code != 200:
             return f"[错误] 百炼 API 返回 {resp.status_code}: {resp.text[:200]}"
         data = resp.json()

@@ -62,7 +62,7 @@ def save_inspection(stats_list: list, stats_summary: dict, report_text: str = ""
         conn.execute(
             "INSERT INTO inspection_items (inspection_id, category, count, defect_count, loss_rate) "
             "VALUES (?, ?, ?, ?, ?)",
-            (insp_id, s["category_en"], s["count"], s["defect_count"], s["loss_rate"]),
+            (insp_id, s["category_en"], s["count"], s.get("defect_count", 0), s.get("loss_rate", "0%")),
         )
     conn.commit()
     conn.close()
